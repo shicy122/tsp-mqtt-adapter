@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+            http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.hycan.idn</groupId>
+        <artifactId>mqtt-adapter</artifactId>
+        <version>4.0.0</version>
+    </parent>
+
+    <artifactId>mqtt-adapter-biz</artifactId>
+    <packaging>jar</packaging>
+
+    <description>mqtt-adapter 业务模块</description>
+
+    <dependencies>
+        <!--必备: 注册中心客户端-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        <!--必备: 配置中心客户端-->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+        </dependency>
+        <!--必备：undertow容器-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-undertow</artifactId>
+        </dependency>
+        <!--redis-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <!-- 引入 mongodb -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+        <!--引入mqtt-->
+        <dependency>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-mqtt</artifactId>
+        </dependency>
+
+        <!-- 必备：tsp核心包 -->
+        <dependency>
+            <groupId>com.hycan.idn</groupId>
+            <artifactId>tsp-common-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>redisson</artifactId>
+                    <groupId>org.redisson</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>redisson-spring-data-26</artifactId>
+                    <groupId>org.redisson</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>redisson-spring-boot-starter</artifactId>
+                    <groupId>org.redisson</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--必备：日志处理-->
+        <dependency>
+            <groupId>com.hycan.idn</groupId>
+            <artifactId>tsp-common-log</artifactId>
+        </dependency>
+        <!--必备：kafka-->
+        <dependency>
+            <groupId>com.hycan.idn</groupId>
+            <artifactId>tsp-common-kafka</artifactId>
+        </dependency>
+
+        <!--必备: 依赖api模块-->
+        <dependency>
+            <groupId>com.hycan.idn</groupId>
+            <artifactId>mqtt-adapter-api</artifactId>
+        </dependency>
+        <!-- acp 协议引擎 -->
+        <dependency>
+            <groupId>com.hycan.idn</groupId>
+            <artifactId>tsp-acp-engine-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

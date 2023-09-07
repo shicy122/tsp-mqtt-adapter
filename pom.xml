@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.hycan.idn</groupId>
+        <artifactId>tsp-common</artifactId>
+        <version>1.0.17-RELEASE</version>
+    </parent>
+
+    <artifactId>mqtt-adapter</artifactId>
+    <version>4.0.0</version>
+    <packaging>pom</packaging>
+
+    <!--项目子模块-->
+    <modules>
+        <module>mqtt-adapter-api</module>
+        <module>mqtt-adapter-biz</module>
+    </modules>
+
+    <properties>
+        <mqtt-adapter-api.version>4.0.0-${suffix}</mqtt-adapter-api.version>
+        <tsp-acp-engine.version>3.4.6-${suffix}</tsp-acp-engine.version>
+        <kryo.version>5.4.0</kryo.version>
+        <suffix>SNAPSHOT</suffix>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--必备: 依赖api模块-->
+            <dependency>
+                <groupId>com.hycan.idn</groupId>
+                <artifactId>mqtt-adapter-api</artifactId>
+                <version>${mqtt-adapter-api.version}</version>
+            </dependency>
+            <!-- acp 协议引擎 -->
+            <dependency>
+                <groupId>com.hycan.idn</groupId>
+                <artifactId>tsp-acp-engine-api</artifactId>
+                <version>${tsp-acp-engine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.esotericsoftware</groupId>
+                <artifactId>kryo</artifactId>
+                <version>${kryo.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>

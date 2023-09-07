@@ -1,0 +1,28 @@
+server:
+  port: 8882
+
+spring:
+  application:
+    name: @artifactId@
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${nacos-host}:${nacos-port}
+        namespace: ${nacos-namespace}
+        group: ${nacos-group}
+        username: ${nacos-user-name}
+        password: ${nacos-password}
+      config:
+        username: ${spring.cloud.nacos.discovery.username}
+        password: ${spring.cloud.nacos.discovery.password}
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+        file-extension: yml
+        shared-configs:
+          # 该公用配置文件存放不需要热更新的配置 如数据库连接配置
+          - data-id: application-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            refresh: false
+          # 该公用配置文件存放需要热更新的配置 如公用业务配置
+          - data-id: application-refresh-${spring.profiles.active}.${spring.cloud.nacos.config.file-extension}
+            refresh: true
+        group: ${spring.cloud.nacos.discovery.group}
+        namespace: ${spring.cloud.nacos.discovery.namespace}
