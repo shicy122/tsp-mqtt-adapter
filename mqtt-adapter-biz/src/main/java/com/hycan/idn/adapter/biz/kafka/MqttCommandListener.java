@@ -77,7 +77,7 @@ public class MqttCommandListener implements BatchAcknowledgingMessageListener<St
                 String value = record.value();
                 if (StringUtils.isBlank(vin) || Objects.isNull(value)) {
                     log.error("mqtt-command receive message is null");
-                    return;
+                    continue;
                 }
                 sendMessage(vin, value);
             }
@@ -93,10 +93,9 @@ public class MqttCommandListener implements BatchAcknowledgingMessageListener<St
      *
      * @param vin   VIN码
      * @param value 车控指令
-     * @throws AdapterBusinessException 业务异常
      */
     @Async(ThreadPoolUtil.DOWN_MSG_THREAD)
-    protected void sendMessage(String vin, String value) throws AdapterBusinessException {
+    protected void sendMessage(String vin, String value) {
         if (enableLog) {
             log.info("接收远程指令: VIN=[{}], 指令数据=[{}]", vin, value);
         }

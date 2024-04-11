@@ -56,6 +56,9 @@ public class AdapterConfig {
 
         /** 是否开启客户端下线日志打印 */
         private Boolean enableOffline = false;
+
+        /** 是否开启数据报文日志打印 */
+        private Boolean enableRawData = false;
     }
 
     @Data

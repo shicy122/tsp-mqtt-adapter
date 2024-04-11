@@ -51,20 +51,6 @@
         <dependency>
             <groupId>com.hycan.idn</groupId>
             <artifactId>tsp-common-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <artifactId>redisson</artifactId>
-                    <groupId>org.redisson</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>redisson-spring-data-26</artifactId>
-                    <groupId>org.redisson</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>redisson-spring-boot-starter</artifactId>
-                    <groupId>org.redisson</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <!--必备：日志处理-->
         <dependency>

@@ -3,9 +3,9 @@ package com.hycan.idn.adapter.biz.kafka;
 import com.hycan.idn.adapter.biz.config.AdapterConfig;
 import com.hycan.idn.adapter.biz.constant.KafkaTopicConstants;
 import com.hycan.idn.adapter.biz.mqtt.MqttMessageHandler;
-import com.hycan.idn.adapter.biz.util.KryoSerializer;
+import com.hycan.idn.adapter.biz.util.JSON;
 import com.hycan.idn.common.core.util.BytesUtil;
-import com.hycan.idn.mqttx.pojo.BridgeMsg;
+import com.hycan.idn.adapter.dto.BridgeMsgDTO;
 import com.hycan.idn.tsp.common.core.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * MQTT桥接消息Listener
@@ -48,13 +49,17 @@ public class MqttBridgeMsgListener implements BatchAcknowledgingMessageListener<
             }
 
             for (final ConsumerRecord<String, byte[]> record : records) {
-                BridgeMsg bridgeMsg = KryoSerializer.deserialize(record.value(), BridgeMsg.class);
-                String topic = bridgeMsg.getTopic();
-                byte[] data = bridgeMsg.getPayload();
+                BridgeMsgDTO bridgeMsgDTO = JSON.readValue(record.value(), BridgeMsgDTO.class);
+                if (Objects.isNull(bridgeMsgDTO)) {
+                    continue;
+                }
+
+                String topic = bridgeMsgDTO.getTopic();
+                byte[] data = bridgeMsgDTO.getPayload();
 
                 if (!StringUtils.hasText(topic) || data.length <= 0) {
                     log.error("MQTT消息格式错误! Topic=[{}], Payload=[{}]", topic, data);
-                    return;
+                    continue;
                 }
                 mqttMessageHandler.handleBizMessage(topic, BytesUtil.bytesToHexString(data));
             }

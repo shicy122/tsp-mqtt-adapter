@@ -58,7 +58,7 @@ public class MqttBizMessageServiceImpl implements IMqttBizMessageService {
 
     private final MongoTemplate mongoTemplate;
 
-    private final boolean enableUpLog, enableDownLog;
+    private final boolean enableUpLog, enableDownLog, enableRawDataLog;
 
     private final Map<Integer, String> appId2KafkaTopicCache;
 
@@ -74,6 +74,7 @@ public class MqttBizMessageServiceImpl implements IMqttBizMessageService {
 
         this.enableUpLog = adapterConfig.getLog().getEnableUpMsg();
         this.enableDownLog = adapterConfig.getLog().getEnableDownMsg();
+        this.enableRawDataLog = adapterConfig.getLog().getEnableRawData();
 
         this.ackAppId = adapterConfig.getAckAppId();
 
@@ -88,7 +89,7 @@ public class MqttBizMessageServiceImpl implements IMqttBizMessageService {
         try {
             String topic = appId2KafkaTopicCache.get(appId);
             if (Objects.isNull(topic)) {
-                log.error("应答远程指令(APP_ID=[{}])对应的Kafka Topic为空", appId);
+                log.error("应答远程指令(APP_ID=[{}])对应的Kafka Topic为空!", appId);
                 return;
             }
 
@@ -98,12 +99,21 @@ public class MqttBizMessageServiceImpl implements IMqttBizMessageService {
                 if (isAckMsg) {
                     log.info("应答远程指令: VIN码=[{}], 指令数据=[{}]", vin, acpMessageStr);
                 } else if (isAckMessage(appId)) {
-                    log.info("发送上行消息: VIN码=[{}], APP_ID=[{}], CommandId=[{}], RawData=[{}]",
-                            vin, appId, acpMessage.getVehicleDescription().getCommandId(),
-                            BytesUtil.bytesToHexString(acpMessage.getPayload()));
+                    if (enableRawDataLog) {
+                        log.info("发送上行消息: VIN码=[{}], APP_ID=[{}], CommandId=[{}], RawData=[{}]",
+                                vin, appId, acpMessage.getVehicleDescription().getCommandId(),
+                                BytesUtil.bytesToHexString(acpMessage.getPayload()));
+                    } else {
+                        log.info("发送上行消息: VIN码=[{}], APP_ID=[{}], CommandId=[{}]",
+                                vin, appId, acpMessage.getVehicleDescription().getCommandId());
+                    }
                 } else {
-                    log.info("发送上行消息: VIN码=[{}], APP_ID=[{}], RawData=[{}]",
-                            vin, appId, BytesUtil.bytesToHexString(acpMessage.getPayload()));
+                    if (enableRawDataLog) {
+                        log.info("发送上行消息: VIN码=[{}], APP_ID=[{}], RawData=[{}]",
+                                vin, appId, BytesUtil.bytesToHexString(acpMessage.getPayload()));
+                    } else {
+                        log.info("发送上行消息: VIN码=[{}], APP_ID=[{}]", vin, appId);
+                    }
                 }
             }
             kafkaTemplate.send(topic, vin, acpMessageStr);
@@ -115,7 +125,11 @@ public class MqttBizMessageServiceImpl implements IMqttBizMessageService {
     @Override
     public void sendDownMessage(int appId, String serial, String vin, byte[] rawData) {
         if (enableDownLog) {
-            log.info("发送下行消息: VIN码=[{}], APP_ID=[{}], RawData=[{}]", vin, appId, BytesUtil.bytesToHexString((rawData)));
+            if (enableRawDataLog) {
+                log.info("发送下行消息: VIN码=[{}], APP_ID=[{}], RawData=[{}]", vin, appId, BytesUtil.bytesToHexString((rawData)));
+            } else {
+                log.info("发送下行消息: VIN码=[{}], APP_ID=[{}]", vin, appId);
+            }
         }
         PubMsgDTO pubMsg = buildMqttPubMsgDto(appId, serial, vin, rawData);
         mqttxRemoteService.publishMessage(pubMsg, false);

@@ -14,8 +14,11 @@ import com.hycan.idn.adapter.biz.pojo.dto.VehicleStatusDTO;
 import com.hycan.idn.adapter.biz.service.IConnectStatusService;
 import com.hycan.idn.adapter.biz.service.IInternalMessageService;
 import com.hycan.idn.adapter.biz.util.IpUtil;
+import com.hycan.idn.tsp.common.core.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 车辆状态 Service
@@ -46,14 +50,18 @@ public class ConnectStatusServiceImpl implements IConnectStatusService {
 
     private final IInternalMessageService internalMsgService;
 
+    private final RedissonClient redissonClient;
+
     private final boolean enableLog;
 
     public ConnectStatusServiceImpl(RedisTemplate<String, Object> redisTemplate,
                                     KafkaTemplate<String, String> kafkaTemplate,
-                                    IInternalMessageService internalMsgService, AdapterConfig config) {
+                                    IInternalMessageService internalMsgService,
+                                    RedissonClient redissonClient, AdapterConfig config) {
         this.redisTemplate = redisTemplate;
         this.kafkaTemplate = kafkaTemplate;
         this.internalMsgService = internalMsgService;
+        this.redissonClient = redissonClient;
 
         this.enableLog = config.getLog().getEnableConnectStatus();
 
@@ -115,9 +123,9 @@ public class ConnectStatusServiceImpl implements IConnectStatusService {
     }
 
     /**
-     * 向车控服务发送车辆在线状态
+     * 向车况服务发送车辆状态
      *
-     * @param vin
+     * @param vin VIN码
      * @param vinStatus 0--不在线 1--正常在线 2--睡眠
      */
     @Override
@@ -125,22 +133,36 @@ public class ConnectStatusServiceImpl implements IConnectStatusService {
         String key = String.format(RedisKeyConstants.T_BOX_STATUS, vin.substring(vin.length() - 2));
 
         String vinStatusValue = vinStatus + "-" + sendTime;
-        Object vinStatusObj = redisTemplate.opsForHash().get(key, vin);
-        if (Objects.nonNull(vinStatusObj)) {
-            String vinStatusCache = vinStatusObj.toString();
-            String[] vehicleStatusArrays = vinStatusCache.split(StrPool.DASHED);
-            if (vehicleStatusArrays.length > 1) {
-                // Redis查询到的数据，解析得到的 上次消息发送时间 < 当前消息发送时间，更新车辆状态
-                if (Long.parseLong(vehicleStatusArrays[1]) < sendTime) {
+
+        RLock lock = redissonClient.getLock(vin);
+        boolean isLocked = false;
+        try {
+            isLocked = lock.tryLock(1000, 1000, TimeUnit.MILLISECONDS);
+            if (isLocked) {
+                Object vinStatusObj = redisTemplate.opsForHash().get(key, vin);
+                if (Objects.nonNull(vinStatusObj)) {
+                    String vinStatusCache = vinStatusObj.toString();
+                    String[] vehicleStatusArrays = vinStatusCache.split(StrPool.DASHED);
+                    if (vehicleStatusArrays.length > 1) {
+                        // Redis查询到的数据，解析得到的 上次消息发送时间 < 当前消息发送时间，更新车辆状态
+                        if (Long.parseLong(vehicleStatusArrays[1]) < sendTime) {
+                            redisTemplate.opsForHash().put(key, vin, vinStatusValue);
+                        }
+                    } else {
+                        // Redis查询到的数据格式不正确时，更新车辆状态
+                        redisTemplate.opsForHash().put(key, vin, vinStatusValue);
+                    }
+                } else {
+                    // Redis不存在指定车辆状态数据时，更新车辆状态
                     redisTemplate.opsForHash().put(key, vin, vinStatusValue);
                 }
-            } else {
-                // Redis查询到的数据格式不正确时，更新车辆状态
-                redisTemplate.opsForHash().put(key, vin, vinStatusValue);
             }
-        } else {
-            // Redis不存在指定车辆状态数据时，更新车辆状态
-            redisTemplate.opsForHash().put(key, vin, vinStatusValue);
+        } catch (InterruptedException e) {
+            log.error("处理车辆状态异常, 详情=[{}]", ExceptionUtil.getBriefStackTrace(e));
+        } finally {
+            if (isLocked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
 
         VehicleStatusDTO vehicleStatusDTO = VehicleStatusDTO.of(vin, vinStatus);

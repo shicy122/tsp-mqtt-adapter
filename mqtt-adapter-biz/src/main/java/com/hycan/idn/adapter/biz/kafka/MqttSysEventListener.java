@@ -4,8 +4,8 @@ import com.hycan.idn.adapter.biz.config.AdapterConfig;
 import com.hycan.idn.adapter.biz.constant.CommonConstants;
 import com.hycan.idn.adapter.biz.constant.KafkaTopicConstants;
 import com.hycan.idn.adapter.biz.mqtt.event.publisher.SysMessageEventPublisher;
-import com.hycan.idn.adapter.biz.util.KryoSerializer;
-import com.hycan.idn.mqttx.pojo.ClientConnOrDiscMsg;
+import com.hycan.idn.adapter.biz.util.JSON;
+import com.hycan.idn.adapter.dto.ClientConnOrDiscMsgDTO;
 import com.hycan.idn.tsp.common.core.util.ExceptionUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -15,6 +15,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * MQTT客户端上下线消息Listener
@@ -47,14 +48,17 @@ public class MqttSysEventListener implements BatchAcknowledgingMessageListener<S
             }
 
             for (final ConsumerRecord<String, byte[]> record : records) {
-                ClientConnOrDiscMsg clientConnOrDiscMsg = KryoSerializer.deserialize(record.value(), ClientConnOrDiscMsg.class);
-
-                String clientId = clientConnOrDiscMsg.getClientId();
-                if (!clientId.startsWith(CommonConstants.TBOX_CLIENT_ID_PREFIX)) {
-                    return;
+                ClientConnOrDiscMsgDTO clientConnOrDiscMsgDTO = JSON.readValue(record.value(), ClientConnOrDiscMsgDTO.class);
+                if (Objects.isNull(clientConnOrDiscMsgDTO)) {
+                    continue;
                 }
 
-                sysMessageEventPublisher.publish(clientConnOrDiscMsg.getType(), clientId);
+                String clientId = clientConnOrDiscMsgDTO.getClientId();
+                if (!clientId.startsWith(CommonConstants.TBOX_CLIENT_ID_PREFIX)) {
+                    continue;
+                }
+
+                sysMessageEventPublisher.publish(clientConnOrDiscMsgDTO.getType(), clientId);
             }
         } catch (Exception e) {
             log.error("处理Kafka消息异常={}", ExceptionUtil.getExceptionCause(e));
